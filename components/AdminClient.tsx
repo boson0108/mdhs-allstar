@@ -86,9 +86,14 @@ export default function AdminClient({
   async function addCandidate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!election) return
+
+    // Keep a stable reference before the first await. Event currentTarget
+    // is not guaranteed to remain available after async work finishes.
+    const formElement = e.currentTarget
+    const form = new FormData(formElement)
+
     setSaving(true)
     try {
-      const form = new FormData(e.currentTarget)
       const photoUrl = await uploadPhoto(form.get('photo') as File)
       const supabase = createClient()
       const { error } = await supabase.from('candidates').insert({
@@ -100,7 +105,8 @@ export default function AdminClient({
         photo_url: photoUrl,
       })
       if (error) throw error
-      e.currentTarget.reset()
+
+      formElement.reset()
       router.refresh()
     } catch (error) {
       alert(error instanceof Error ? error.message : '建立候選人失敗')
